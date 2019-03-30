@@ -24,6 +24,7 @@ enum MEM_OP_TYPE
 enum MEM_STATE
 {
     MEM_STATE_ALLOCATED = 0,      //已分配
+    MEM_STATE_REPEAT_ALLOCATED,   //同一地址重复分配
     MEM_STATE_RELEASED,           //已经正确释放
     MEM_STATE_REPEAT_RELEASED,    //重复释放
     MEM_STATE_UNKNOW_ADDR,        //未知地址释放
@@ -91,11 +92,11 @@ private:
     void FreeMemInfo(MemInfoT *& meminfo);
     void FindMemInfo(void * ptr, MemInfoT *& meminfo);
 
-    void InsertDeleteErrorInfo(MemInfoT meminfo);
+    void InsertErrorInfo(MemInfoT meminfo);
 
 private:
     MemInfoT * newlist;
-    MemInfoT * deletelist;
+    MemInfoT * errorlist;
 };
 
 #endif //__INTERNAL_MEMORY_CHECK_H_H__

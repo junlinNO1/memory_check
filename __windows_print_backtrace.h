@@ -10,12 +10,12 @@
 
 #if 1
 void InitTrack();
-void StackTrack();
+void StackTrack(char * buf, unsigned int maxlen);
 void UninitTrack();
 
 extern CONTEXT g_context;
 
-#define OPEN_STACK_TRACK \
+#define OPEN_STACK_TRACK(buff,len) \
 HANDLE hThread = GetCurrentThread();\
 GetThreadContext(hThread, &g_context);\
 __asm{call $ + 5}\
@@ -24,7 +24,7 @@ __asm{mov g_context.Eip, eax}\
 __asm{mov g_context.Ebp, ebp}\
 __asm{mov g_context.Esp, esp}\
 InitTrack();\
-StackTrack();\
+StackTrack(buff,len);\
 UninitTrack();
 
 #else

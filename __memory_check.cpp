@@ -184,7 +184,7 @@ void FreeMemCheck()
 * 功   能:  构造函数
 * 返回 值:  void
 ******************************************************************************/
-MemoryCheck::MemoryCheck() : newlist(NULL), deletelist(NULL)
+MemoryCheck::MemoryCheck() : newlist(NULL), errorlist(NULL)
 {
     //InitTrack();
 }
@@ -221,7 +221,7 @@ void MemoryCheck::InsertMemInfo(void * ptr, unsigned int size, const char * file
         meminfo = (MemInfoT *)malloc(sizeof(MemInfoT));
         if (meminfo == NULL)
         {
-            printf("[MemoryCheck][Malloc_Error]InsertMemInfo, malloc new meminfo fail!.\n");
+            printf("[MemoryCheck][Malloc_Error]InsertMemInfo, malloc meminfo fail!.\n");
             return;
         }
 
@@ -232,14 +232,18 @@ void MemoryCheck::InsertMemInfo(void * ptr, unsigned int size, const char * file
     }
     else
     {
-        if (meminfo->_state == MEM_STATE_RELEASED)
+        if (meminfo->_state != MEM_STATE_ALLOCATED && meminfo->_state != MEM_STATE_REPEAT_ALLOCATED)
         {
+            //源节点已经释放过(无论当时释放是否出错)，则更新节点信息，重复利用节点
             *meminfo = MemInfoT(ptr, size, file, func, line, type);
             meminfo->_state = MEM_STATE_ALLOCATED;
         }
-        else
+        else  //理论上不可能出现前一次未释放，而下一次分配在同一个堆地址上
         {
-
+            printf("[MemoryCheck][Malloc_Error]InsertMemInfo, malloc mem repeat!.\n");
+            MemInfoT temp = MemInfoT(ptr, size, file, func, line, type);
+            temp._state = MEM_STATE_REPEAT_ALLOCATED; //置节点状态为重复分配
+            InsertErrorInfo(temp);
         }
     }
     
@@ -298,36 +302,25 @@ void MemoryCheck::DeleteMemInfo(void * ptr, const char * file, const char * func
         if (curr->_state == MEM_STATE_RELEASED || curr->_state == MEM_STATE_REPEAT_RELEASED)
         {
             curr->_state = MEM_STATE_REPEAT_RELEASED; //置节点状态为重复释放
+            
+            MemInfoT temp = MemInfoT(ptr, 0, file, func, line, type);
+            temp._state = MEM_STATE_REPEAT_RELEASED; //置节点状态删除操作符不匹配
+            InsertErrorInfo(temp);
         }
         else if (curr->_state == MEM_STATE_ALLOCATED)
         {
-            if (curr->_type == (type - OP_DELETE))
-            {
-                curr->_state = MEM_STATE_RELEASED; //置节点状态为正常释放                
-            }
-            else
+            curr->_state = MEM_STATE_RELEASED; //置当前节点状态为正常释放 
+            if (curr->_type != (type - OP_DELETE))
             {
                 //delete/Delete[]与new/new[]不匹配
                 MemInfoT temp = MemInfoT(ptr, 0, file, func, line, type);
                 temp._state = MEM_STATE_DELETE_NOT_MATCH; //置节点状态删除操作符不匹配
-                InsertDeleteErrorInfo(temp);
-
-                MemInfoT * deletememinfo = (MemInfoT *)malloc(sizeof(MemInfoT));
-                if (deletememinfo == NULL)
-                {
-                    printf("[MemoryCheck][Malloc_Error]DeleteMemInfo, malloc delete meminfo fail!.\n");
-                    return;
-                }
-
-                *deletememinfo = MemInfoT(ptr, 0, file, func, line, type);
-                deletememinfo->_state = MEM_STATE_DELETE_NOT_MATCH; //置节点状态删除操作符不匹配
-                deletememinfo->_next = deletelist;
-                deletelist = deletememinfo;
+                InsertErrorInfo(temp);
             }
         }
         else//正常情况下不存在这种场景
         {
-            printf("[MemoryCheck][RELEASE_ERROR]DeleteMemInfo:Unknow state %d, addr:0x%p, file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][RELEASE_ERROR]DeleteMemInfo:Unknow state %d, addr:0x%08p, file:%s, func:%s, line:%u.\n",
                 curr->_state, curr->_ptr, curr->_file, curr->_func, curr->_line);
         }
     }
@@ -335,7 +328,7 @@ void MemoryCheck::DeleteMemInfo(void * ptr, const char * file, const char * func
     {
         MemInfoT temp = MemInfoT(ptr, 0, file, func, line, type);
         temp._state = MEM_STATE_UNKNOW_ADDR; //置节点状态为未找到地址
-        InsertDeleteErrorInfo(temp);
+        InsertErrorInfo(temp);
     }
 }
 
@@ -347,18 +340,18 @@ void MemoryCheck::DeleteMemInfo(void * ptr, const char * file, const char * func
 * 功   能:  将释放内存出现错误时，将错误释放内存信息加入deletelist
 * 返回 值:  void
 ******************************************************************************/
-void MemoryCheck::InsertDeleteErrorInfo(MemInfoT meminfo)
+void MemoryCheck::InsertErrorInfo(MemInfoT meminfo)
 {
-    MemInfoT * deletememinfo = (MemInfoT *)malloc(sizeof(MemInfoT));
-    if (deletememinfo == NULL)
+    MemInfoT * errormeminfo = (MemInfoT *)malloc(sizeof(MemInfoT));
+    if (errormeminfo == NULL)
     {
-        printf("[MemoryCheck][Malloc_Error]InsertDeleteErrorInfo, malloc delete meminfo fail!.\n");
+        printf("[MemoryCheck][Malloc_Error]InsertDeleteErrorInfo, malloc error meminfo fail!.\n");
         return;
     }
 
-    *deletememinfo = meminfo;
-    deletememinfo->_next = deletelist;
-    deletelist = deletememinfo;
+    *errormeminfo = meminfo;
+    errormeminfo->_next = errorlist;
+    errorlist = errormeminfo;
 }
 
 /******************************************************************************
@@ -408,7 +401,7 @@ void MemoryCheck::FreeMemInfo(MemInfoT *& meminfo)
 void MemoryCheck::FreeMemInfo()
 {
     FreeMemInfo(newlist);
-    FreeMemInfo(deletelist);
+    FreeMemInfo(errorlist);
 }
 
 /******************************************************************************
@@ -422,7 +415,7 @@ void MemoryCheck::FreeMemInfo()
 void MemoryCheck::PrintReleaseTypeNotMatch()
 {
     bool firstflag = true;
-    MemInfoT * curr = deletelist;
+    MemInfoT * curr = errorlist;
     while (curr != NULL)
     {
         if (firstflag)
@@ -433,11 +426,11 @@ void MemoryCheck::PrintReleaseTypeNotMatch()
 
         if (curr->_state == MEM_STATE_DELETE_NOT_MATCH)
         {
-            printf("[MemoryCheck][RELEASE_NOT_MATCH]Delete addr:0x%p, use:%s, but expect:%s, not match, please check! ---- file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][RELEASE_NOT_MATCH]Delete addr:0x%08p, use:%s, but expect:%s, not match, please check! ---- file:%s, func:%s, line:%u.\n",
                 curr->_ptr, ((curr->_type == OP_NEW) ? OP_NAME[OP_DELETE_ARRAY] : OP_NAME[OP_DELETE]),
                 ((curr->_type == OP_NEW) ? OP_NAME[OP_DELETE] : OP_NAME[OP_DELETE_ARRAY]),
                 curr->_file, curr->_func, curr->_line);
-            PrintBacktrace();
+            //PrintBacktrace();
         }
         
         curr = curr->_next;
@@ -455,7 +448,7 @@ void MemoryCheck::PrintReleaseTypeNotMatch()
 void MemoryCheck::PrintReleaseUnknowAddr()
 {
     bool firstflag = true;
-    MemInfoT * curr = deletelist;
+    MemInfoT * curr = errorlist;
     while (curr != NULL)
     {
         if (curr->_state == MEM_STATE_UNKNOW_ADDR)
@@ -466,7 +459,7 @@ void MemoryCheck::PrintReleaseUnknowAddr()
                 firstflag = false;
             }
 
-            printf("[MemoryCheck][RELEASE_UNKNOW_ADDR]Memory addr:0x%p, file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][RELEASE_UNKNOW_ADDR]Memory addr:0x%08p, file:%s, func:%s, line:%u.\n",
                 curr->_ptr, curr->_file, curr->_func, curr->_line);
 
             //PrintBacktrace();
@@ -479,7 +472,7 @@ void MemoryCheck::PrintReleaseUnknowAddr()
                 firstflag = false;
             }
 
-            printf("[MemoryCheck][RELEASE_ERROR]PrintReleaseTypeNotMatch:Unknow state %d, addr:0x%p, file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][RELEASE_ERROR]PrintReleaseTypeNotMatch:Unknow state %d, addr:0x%08p, file:%s, func:%s, line:%u.\n",
                 curr->_state, curr->_ptr, curr->_file, curr->_func, curr->_line);
 
             //PrintBacktrace();
@@ -503,7 +496,7 @@ void MemoryCheck::PrintMemLeak()
     MemInfoT * curr = newlist;
     while (curr != NULL)
     {
-        if (curr->_state != MEM_STATE_RELEASED && curr->_state != MEM_STATE_REPEAT_RELEASED)
+        if (curr->_state == MEM_STATE_ALLOCATED)
         {
             if (firstflag)
             {
@@ -511,7 +504,7 @@ void MemoryCheck::PrintMemLeak()
                 firstflag = false;
             }
 
-            printf("[MemoryCheck][MEMORY_LEAK]Memory addr:0x%p, size:%u, use:%s, file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][MEMORY_LEAK]Memory addr:0x%08p, size:%u, use:%s, file:%s, func:%s, line:%u.\n",
                 curr->_ptr, curr->_size, ((curr->_type == OP_NEW) ? OP_NAME[OP_NEW] : OP_NAME[OP_NEW_ARRAY]),
                 curr->_file, curr->_func, curr->_line);
         }
@@ -531,7 +524,7 @@ void MemoryCheck::PrintMemLeak()
 void MemoryCheck::PrintRepeatRelease()
 {
     bool firstflag = true;
-    MemInfoT * curr = newlist;
+    MemInfoT * curr = errorlist;
     while (curr != NULL)
     {
         if (curr->_state == MEM_STATE_REPEAT_RELEASED) //重复释放
@@ -542,7 +535,7 @@ void MemoryCheck::PrintRepeatRelease()
                 firstflag = false;
             }
 
-            printf("[MemoryCheck][REPEAT_RELEASE]Memory addr:0x%p, size:%u, use:%s, file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][REPEAT_RELEASE]Memory addr:0x%08p, size:%u, use:%s, file:%s, func:%s, line:%u.\n",
                 curr->_ptr, curr->_size, ((curr->_type == OP_NEW) ? OP_NAME[OP_NEW] : OP_NAME[OP_NEW_ARRAY]),
                 curr->_file, curr->_func, curr->_line);
         }
@@ -573,7 +566,7 @@ void MemoryCheck::PrintReleaseSucceed()
                 firstflag = false;
             }
 
-            printf("[MemoryCheck][RELEASE_SUCCEED]Memory addr:0x%p, size:%u, use:%s, file:%s, func:%s, line:%u.\n",
+            printf("[MemoryCheck][RELEASE_SUCCEED]Memory addr:0x%08p, size:%u, use:%s, file:%s, func:%s, line:%u.\n",
                 curr->_ptr, curr->_size, ((curr->_type == OP_NEW) ? OP_NAME[OP_NEW] : OP_NAME[OP_NEW_ARRAY]),
                 curr->_file, curr->_func, curr->_line);
         }
@@ -607,7 +600,8 @@ void MemoryCheck::PrintBacktrace()
     }
 #elif _WIN32
 #if 1
-    OPEN_STACK_TRACK
+    char buf[1024];
+    OPEN_STACK_TRACK(buf, 1024)
 #else
     TraceStack();
 #endif

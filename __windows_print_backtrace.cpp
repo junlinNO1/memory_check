@@ -9,7 +9,8 @@ CONTEXT g_context;
 
 void InitTrack(){    g_hHandle = GetCurrentProcess();
     SymInitialize(g_hHandle, NULL, TRUE);}
-void StackTrack(){    g_hThread = GetCurrentThread();    STACKFRAME sf = { 0 };
+
+void StackTrack(char * buf, unsigned int maxlen){    memset(buf, 0, maxlen * sizeof(char));    g_hThread = GetCurrentThread();    STACKFRAME sf = { 0 };
     sf.AddrPC.Offset = g_context.Eip;    sf.AddrPC.Mode = AddrModeFlat;
     sf.AddrFrame.Offset = g_context.Ebp;    sf.AddrFrame.Mode = AddrModeFlat;
     sf.AddrStack.Offset = g_context.Esp;    sf.AddrStack.Mode = AddrModeFlat;
@@ -17,9 +18,9 @@ void StackTrack(){    g_hThread = GetCurrentThread();    STACKFRAME sf = { 0 
     DWORD dwDisplament = 0;    SYMBOL_INFO stack_info = { 0 };    PIMAGEHLP_SYMBOL pSym = (PIMAGEHLP_SYMBOL)&stack_info;    pSym->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL);    pSym->MaxNameLength = sizeof(SYMBOL_INFO) - offsetof(SYMBOL_INFO, symInfo.Name);    IMAGEHLP_LINE ImageLine = { 0 };    ImageLine.SizeOfStruct = sizeof(IMAGEHLP_LINE);
 
     int frame = 0;
-    while (StackWalk(IMAGE_FILE_MACHINE_I386, g_hHandle, g_hThread, &sf, &g_context, NULL, SymFunctionTableAccess, SymGetModuleBase, NULL))    {        SymGetSymFromAddr(g_hHandle, sf.AddrPC.Offset, &dwDisplament, pSym);        SymGetLineFromAddr(g_hHandle, sf.AddrPC.Offset, &dwDisplament, &ImageLine);        printf("frame:%d : %08x + %s (FILE[%s] LINE[%d])\n", frame++, pSym->Address, pSym->Name, ImageLine.FileName, ImageLine.LineNumber);    }
+    while (StackWalk(IMAGE_FILE_MACHINE_I386, g_hHandle, g_hThread, &sf, &g_context, NULL, SymFunctionTableAccess, SymGetModuleBase, NULL))    {        SymGetSymFromAddr(g_hHandle, sf.AddrPC.Offset, &dwDisplament, pSym);        SymGetLineFromAddr(g_hHandle, sf.AddrPC.Offset, &dwDisplament, &ImageLine);        //printf("frame:%03d : %08x + %s (FILE[%s] LINE[%d])\n", frame++, pSym->Address, pSym->Name, ImageLine.FileName, ImageLine.LineNumber);        sprintf_s(buf + strlen(buf), maxlen, "frame:%03d : %08x + %s (FILE[%s] LINE[%d])\n", frame++, pSym->Address, pSym->Name, ImageLine.FileName, ImageLine.LineNumber);    }
 }
-void UninitTrack(){    SymCleanup(g_hHandle);    CloseHandle(g_hHandle);    CloseHandle(g_hThread);}
+void UninitTrack(){    SymCleanup(g_hHandle);    //CloseHandle(g_hHandle);   // CloseHandle(g_hThread);}
 
 #else
 

@@ -1,15 +1,16 @@
-﻿Build started 2019/3/30 11:54:10.
-     1>Project "E:\Projects\Git\TestOperatorNew\TestOperatorNew\TestOperatorNew.vcxproj" on node 2 (Build target(s)).
+﻿Build started 2019/3/30 13:18:35.
+     1>Project "E:\Projects\Git\TestOperatorNew\TestOperatorNew\TestOperatorNew.vcxproj" on node 2 (Rebuild target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt TestMain.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt __memory_check.cpp TestMain.cpp __windows_print_backtrace.cpp
+         __windows_print_backtrace.cpp
+     1>e:\projects\git\testoperatornew\testoperatornew\__windows_print_backtrace.cpp(23): error C2601: 'UninitTrack' : local function definitions are illegal
+                 e:\projects\git\testoperatornew\testoperatornew\__windows_print_backtrace.cpp(13): this line contains a '{' which has not yet been matched
+     1>e:\projects\git\testoperatornew\testoperatornew\__windows_print_backtrace.cpp(103): fatal error C1075: end of file found before the left brace '{' at 'e:\projects\git\testoperatornew\testoperatornew\__windows_print_backtrace.cpp(23)' was matched
          TestMain.cpp
-       Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.lib" /MACHINE:X86 Debug\__memory_check.obj
-         Debug\TestMain.obj
-         Debug\__windows_print_backtrace.obj
-         TestOperatorNew.vcxproj -> E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.exe
-     1>Done Building Project "E:\Projects\Git\TestOperatorNew\TestOperatorNew\TestOperatorNew.vcxproj" (Build target(s)).
+         __memory_check.cpp
+         Generating Code...
+     1>Done Building Project "E:\Projects\Git\TestOperatorNew\TestOperatorNew\TestOperatorNew.vcxproj" (Rebuild target(s)) -- FAILED.
 
-Build succeeded.
+Build FAILED.
 
-Time Elapsed 00:00:00.61
+Time Elapsed 00:00:01.66
