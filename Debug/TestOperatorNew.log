@@ -1,0 +1,15 @@
+﻿Build started 2019/3/30 11:54:10.
+     1>Project "E:\Projects\Git\TestOperatorNew\TestOperatorNew\TestOperatorNew.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt TestMain.cpp
+         TestMain.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.lib" /MACHINE:X86 Debug\__memory_check.obj
+         Debug\TestMain.obj
+         Debug\__windows_print_backtrace.obj
+         TestOperatorNew.vcxproj -> E:\Projects\Git\TestOperatorNew\Debug\TestOperatorNew.exe
+     1>Done Building Project "E:\Projects\Git\TestOperatorNew\TestOperatorNew\TestOperatorNew.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.61
