@@ -1,11 +1,10 @@
 #include <iostream>
 
-#ifndef __MEMORY_CHECK_LIJUN__
-#define __MEMORY_CHECK_LIJUN__
+#ifndef MEMORY_CHECK
+#define MEMORY_CHECK
 #endif
-#define __MEMORY_CHECK_LIJUN_C__
 #include "memory_check.h"
-#include "TestClass2.h"
+#include "__stack.h"
 //---------------------------------------------------------------
 // ´ý²âÊÔ´úÂë 
 //---------------------------------------------------------------
@@ -58,7 +57,7 @@ int main()
 {
     //good_code();
     //bad_code();
-/*
+
     int *t1 = new int[10];
     delete t1;
     delete t1;
@@ -69,13 +68,6 @@ int main()
 
     A * pA2 = new A;
     delete pA2;
-   */ 
-
-    TestClass2 * pobj2 = new TestClass2;
-    delete pobj2;
-
-    int * pppp = (int*)malloc(20);
-    delete pppp;
 
     PrintMemCheckResult();
     FreeMemCheck();
