@@ -364,8 +364,11 @@ int MemoryCheck::InsertMemInfo(unsigned long addr, unsigned int size, const char
         if (meminfo->_state != MEM_STATE_ALLOCATED && meminfo->_state != MEM_STATE_REPEAT_ALLOCATED)
         {
             //源节点已经释放过(无论当时释放是否出错)，则更新节点信息，重复利用节点
+            WriteToFile(CORRECT_WRITE, "[MemoryCheck][RELEASE_SUCCEED][REPEAT]Memory addr:0x%08x, size:%u, release type:%s, [file:%s, func:%s, line:%u].\n",
+                meminfo->_next._real_key, meminfo->_size, OP_NAME[meminfo->_type], meminfo->_file, meminfo->_func, meminfo->_line);
+                
             *meminfo = MemInfoT(addr, size, file, func, line, type, OP_NONE, MEM_STATE_ALLOCATED, meminfo->_next._next);
-            printf("[MemoryCheck][MEM_STATE_REPEAT_ALLOCATED] repeat 0x%08x!.\n", addr);
+            //printf("[MemoryCheck][MEM_STATE_REPEAT_ALLOCATED] repeat 0x%08x!.\n", addr);
         }
         else  //理论上不可能出现前一次未释放，而下一次分配在同一个堆地址上
         {
