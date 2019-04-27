@@ -7,7 +7,7 @@
 #include "memory_check.h"
 #include "TestClass2.h"
 //---------------------------------------------------------------
-// å¾…æµ‹è¯•ä»£ç  
+// ´ı²âÊÔ´úÂë 
 //---------------------------------------------------------------
 extern void bad_code() {
     int *p = new int;
@@ -68,7 +68,17 @@ int main()
 
     A * pA2 = new A;
     delete pA2;
-   
+
+	int *ppppp[10];
+	for (int i = 0; i <10; ++i)
+	{
+	ppppp[i] = new int;
+    }
+
+	for (int i = 0; i <10; ++i)
+	{
+	delete ppppp[i];
+    }
 
     TestClass2 * pobj2 = new TestClass2;
     delete pobj2;

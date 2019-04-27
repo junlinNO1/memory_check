@@ -290,6 +290,7 @@ NextElemT * _HashTable::NextElement()
                     {
                         NextElemT * tmp = _current;
                         _current = _current->_next;
+                        //printf("[NextElement] 0x%08x.\n", tmp->_real_key);
                         return tmp;
                     }
                 }
@@ -301,6 +302,7 @@ NextElemT * _HashTable::NextElement()
             {
                 NextElemT * tmp = _current;
                 _current = _current->_next;
+                //printf("[NextElement] 0x%08x.\n", tmp->_real_key);
                 return tmp;
             }
         }
@@ -341,6 +343,15 @@ void _HashTable::PrintHashScoredHit()
                 memset(buffer, 0, sizeof(buffer));
 	            sprintf(buffer, "--Level 2 (index: %d, hit count: %d)\n", idx_l2, _table[idx_l1]._level2[idx_l2]._count);
 	            fwrite(buffer, strlen(buffer), 1, file);
+
+                /*NextElemT * next = _table[idx_l1]._level2[idx_l2]._info;
+                while (next != NULL)
+                {
+                    memset(buffer, 0, sizeof(buffer));
+    	            sprintf(buffer, "next: key:0x%08x \n", next->_real_key);
+    	            fwrite(buffer, strlen(buffer), 1, file);
+                    next = next->_next;
+                }*/
             }
         }
         fflush(file);

@@ -365,6 +365,7 @@ int MemoryCheck::InsertMemInfo(unsigned long addr, unsigned int size, const char
         {
             //源节点已经释放过(无论当时释放是否出错)，则更新节点信息，重复利用节点
             *meminfo = MemInfoT(addr, size, file, func, line, type, OP_NONE, MEM_STATE_ALLOCATED, meminfo->_next._next);
+            printf("[MemoryCheck][MEM_STATE_REPEAT_ALLOCATED] repeat 0x%08x!.\n", addr);
         }
         else  //理论上不可能出现前一次未释放，而下一次分配在同一个堆地址上
         {
@@ -441,7 +442,7 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
             }
             else
             {
-            	printf("[MemoryCheck][RELEASE_SUCCESS]\n");
+            	//printf("[MemoryCheck][RELEASE_SUCCESS][0x%08x]\n", addr);
                 return 0; //正常释放内存
             }
         }
@@ -778,7 +779,8 @@ void MemoryCheck::PrintReleaseSucceed()
     NextElemT * nextelem = NULL;
     while ((nextelem = _new_hash_table.NextElement()) != NULL)
     {
-    	MemInfoT * curr = (MemInfoT *)nextelem;
+        MemInfoT * curr = (MemInfoT *)nextelem;
+    	//printf("[MemoryCheck]PrintReleaseSucceed nextelem:0x%08x, curr:0x%08x, curr->_state:%d\n", nextelem->_real_key, curr->_next._real_key, curr->_state);
         if (curr->_state == MEM_STATE_RELEASED)
         {
             if (firstflag)
