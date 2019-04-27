@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -408,7 +408,7 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
             else {
             	temp = MemInfoT(addr, 0, file, func, line, type);
             }
-            temp._state = MEM_STATE_REPEATED_RELEASED; //置节点状态删除操作符不匹配
+            temp._state = MEM_STATE_REPEATED_RELEASED; 
             InsertErrorInfo(temp);
 
             PrintBacktrace("\n[MemoryCheck][REPEATED_RELEASE]Memory addr:0x%08x, size:%u, release type:%s, [file:%s, func:%s, line:%u].\n",
@@ -421,7 +421,7 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
                 (find_info->_type == OP_NEW_ARRAY && type != OP_DELETE_ARRAY) ||
                 (find_info->_type == OP_MALLOC && type != OP_FREE))
             {
-                find_info->_state = MEM_STATE_DELETE_MISMATCH; //置当前节点状态为正常释放 
+                find_info->_state = MEM_STATE_DELETE_MISMATCH;  //置节点状态删除操作符不匹配
                 //delete/Delete[]与new/new[]不匹配
                 MemInfoT temp;
                 if (line == 0) {
@@ -430,7 +430,7 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
                 else {
                 	temp = MemInfoT(addr, 0, file, func, line, type, find_info->_type);
                 }
-                temp._state = MEM_STATE_DELETE_MISMATCH; //置节点状态删除操作符不匹配
+                temp._state = MEM_STATE_DELETE_MISMATCH; 
                 InsertErrorInfo(temp);
 
                 PrintBacktrace("\n[MemoryCheck][RELEASE_MISMATCH]Delete mismatch addr:0x%08x, release type:%s, but expect:%s, [file:%s, func:%s, line:%u].\n",
