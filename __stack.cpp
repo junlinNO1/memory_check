@@ -1,6 +1,6 @@
 #include "__stack.h"
 
-//´òÓ¡ElementT¶ÔÏó
+//æ‰“å°ElementTå¯¹è±¡
 void PrintElement(const ElementT & elem)
 {
     std::cout << elem._file << ", " << elem._func << ", " << elem._line << std::endl;
@@ -22,7 +22,7 @@ SimpleLinkStack::~SimpleLinkStack()
         free(_headNode);
 }
 
-//Çå³ıÁ´±íÖĞµÄËùÓĞÔªËØ
+//æ¸…é™¤é“¾è¡¨ä¸­çš„æ‰€æœ‰å…ƒç´ 
 bool SimpleLinkStack::clear()
 {
     while (_headNode->_next)
@@ -36,7 +36,7 @@ bool SimpleLinkStack::clear()
     return true;
 }
 
-//ÅĞ¶ÏÕ»ÊÇ·ñÎª¿Õ
+//åˆ¤æ–­æ ˆæ˜¯å¦ä¸ºç©º
 bool SimpleLinkStack::isEmpty()
 {
     if (!_length)
@@ -47,13 +47,13 @@ bool SimpleLinkStack::isEmpty()
         return false;
 }
 
-//»ñÈ¡Õ»µÄ³¤¶È
+//è·å–æ ˆçš„é•¿åº¦
 unsigned int SimpleLinkStack::GetLength()
 {
     return _length;
 }
 
-//»ñÈ¡Õ»¶¥ÔªËØ£¬Ö»·ÃÎÊ²»³öÕ»
+//è·å–æ ˆé¡¶å…ƒç´ ï¼Œåªè®¿é—®ä¸å‡ºæ ˆ
 const ElementT SimpleLinkStack::GetTop()
 {
     if (_headNode->_next != NULL)
@@ -64,21 +64,21 @@ const ElementT SimpleLinkStack::GetTop()
     return ElementT();
 }
 
-//½«ÔªËØÍÆÈëÕ»¶¥
+//å°†å…ƒç´ æ¨å…¥æ ˆé¡¶
 bool SimpleLinkStack::Push(const ElementT elem)
 {
     StackNode* pNode = (StackNode*)malloc(sizeof(StackNode));
     pNode->_elem = elem;
     pNode->_next = NULL;
 
-    //²ÉÓÃÍ·²å·¨£¬¼´pNode´úÌæÕ»¶¥µÄ£¬ËùÒÔpNodeµÄÏÂÒ»¸öÓ¦ÎªheadµÄÏÂÒ»¸ö£»
+    //é‡‡ç”¨å¤´æ’æ³•ï¼Œå³pNodeä»£æ›¿æ ˆé¡¶çš„ï¼Œæ‰€ä»¥pNodeçš„ä¸‹ä¸€ä¸ªåº”ä¸ºheadçš„ä¸‹ä¸€ä¸ªï¼›
     pNode->_next = _headNode->_next;
     _headNode->_next = pNode;
     _length++;
     return true;
 }
 
-//½«Õ»¶¥ÔªËØ³öÕ»
+//å°†æ ˆé¡¶å…ƒç´ å‡ºæ ˆ
 bool SimpleLinkStack::Pop(ElementT & elem)
 {
     if (_headNode->_next != NULL)
@@ -94,7 +94,7 @@ bool SimpleLinkStack::Pop(ElementT & elem)
         return false;
 }
 
-//´òÓ¡µ±Ç°Õ»ÖĞµÄËùÓĞÔªËØ
+//æ‰“å°å½“å‰æ ˆä¸­çš„æ‰€æœ‰å…ƒç´ 
 void SimpleLinkStack::printStack()
 {
     if (_headNode->_next != NULL)

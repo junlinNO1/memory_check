@@ -1,57 +1,16 @@
 #ifndef __MEMORY_CHECK_H_H__
 #define __MEMORY_CHECK_H_H__
 
-#ifdef __MEMORY_CHECK_LIJUN__   //Èç¹ûĞèÒª½øĞĞÄÚ´æ·ÖÅäÊÍ·Å¼ì²âÊ±£¬ĞéÔÚÒıÈë´ËÍ·ÎÄ¼şÇ°ÏÈ¶¨Òå´Ëºê
+#ifdef __MEMORY_CHECK_LIJUN__   //å¦‚æœéœ€è¦è¿›è¡Œå†…å­˜åˆ†é…é‡Šæ”¾æ£€æµ‹æ—¶ï¼Œè™šåœ¨å¼•å…¥æ­¤å¤´æ–‡ä»¶å‰å…ˆå®šä¹‰æ­¤å®
 #include <iostream>
 
 extern void * operator new(size_t size, const char * file, const char * func, unsigned int line);
 extern void * operator new[](size_t size, const char * file, const char * func, unsigned int line);
-extern void * operator new(size_t size);
-extern void * operator new[](size_t size);
 
 extern void operator delete(void * ptr, const char * file, const char * func, unsigned int line);
 extern void operator delete[](void * ptr, const char * file, const char * func, unsigned int line);
 extern void operator delete(void * ptr)  throw ();
 extern void operator delete[](void * ptr)  throw ();
-
-extern int DeleteMemInfo(void * ptr, int type);
-/******************************************************************************
-* º¯ÊıÃû³Æ:  operator delete
-* ×÷Õß:	 lijun
-* ÈÕÆÚ  2019.03.29
-* ²ÎÊı:
-* ¹¦ÄÜ:  ÖØÔØ operator delete   ×¢Òâ£ºÕâÀïÊÇstaticµÄ£¬ÒÔÃâÈ«¾Ö·¶Î§ÄÚµÄdelete¶¼µ÷ÓÃµ½´Ëº¯Êı
-* ·µ»ØÖµ:  void
-******************************************************************************/
-static void operator delete(void * ptr) throw()
-{
-    if (ptr == NULL)
-        return;
-
-    if (0 == DeleteMemInfo(ptr, 2))
-    {
-        free(ptr);
-    }
-}
-
-/******************************************************************************
-* º¯ÊıÃû³Æ:  operator delete[]
-* ×÷Õß:	 lijun
-* ÈÕÆÚ  2019.03.29
-* ²ÎÊı:
-* ¹¦ÄÜ:  ÖØÔØ operator delete[]   ×¢Òâ£ºÕâÀïÊÇstaticµÄ£¬ÒÔÃâÈ«¾Ö·¶Î§ÄÚµÄdelete¶¼µ÷ÓÃµ½´Ëº¯Êı
-* ·µ»ØÖµ:  void
-******************************************************************************/
-static void operator delete[](void * ptr) throw()
-{
-    if (ptr == NULL)
-        return;
-
-    if (0 == DeleteMemInfo(ptr, 3))
-    {
-        free(ptr);
-    }
-}
 
 #ifndef __DEBUG_MACRO_NEW_DELETE_201903292259__
 
@@ -59,42 +18,32 @@ static void operator delete[](void * ptr) throw()
 #define new new(__FILE__, __FUNCTION__, __LINE__)
 #endif //new
 
-#ifndef delete
-//#define delete delete(__FILE__, __FUNCTION__, __LINE__)
-#endif //delete
-
 /******************************************************************************
-* º¯ÊıÃû³Æ: PrintMemCheckResult
-* ×÷Õß:	   lijun
-* ÈÕÆÚ£º   2019.03.29
-* ²ÎÊı:
-* ¹¦ÄÜ:    ´òÓ¡ÄÚ´æ·ÖÅäÊÍ·Å¼ì²â½á¹û
-* ·µ»ØÖµ:  void
+* å‡½æ•°åç§°: PrintMemCheckResult
+* ä½œè€…:	   lijun
+* æ—¥æœŸï¼š   2019.03.29
+* å‚æ•°:
+* åŠŸèƒ½:    æ‰“å°å†…å­˜åˆ†é…é‡Šæ”¾æ£€æµ‹ç»“æœ
+* è¿”å›å€¼:  void
 ******************************************************************************/
 extern void PrintMemCheckResult(); 
 
 /******************************************************************************
-* º¯ÊıÃû³Æ: FreeMemCheck
-* ×÷Õß:	   lijun
-* ÈÕÆÚ£º   2019.03.29
-* ²ÎÊı:
-* ¹¦ÄÜ:    ÊÍ·ÅÄÚ´æ¼ì²â¹ı³ÌÖĞ·ÖÅäµÄ×ÊÔ´
-* ·µ»ØÖµ:  void
+* å‡½æ•°åç§°: FreeMemCheck
+* ä½œè€…:	   lijun
+* æ—¥æœŸï¼š   2019.03.29
+* å‚æ•°:
+* åŠŸèƒ½:    é‡Šæ”¾å†…å­˜æ£€æµ‹è¿‡ç¨‹ä¸­åˆ†é…çš„èµ„æº
+* è¿”å›å€¼:  void
 ******************************************************************************/
 extern void FreeMemCheck();
-
-
-//Ö÷ÒªÓÃÔÚÏÂÃæµÄºêÖĞ£¬ÓÃÀ´´«µİdelete/delete[]µÄÎÄ¼şÃû¡¢º¯ÊıÃû¡¢ĞĞºÅĞÅÏ¢
-extern void SetDeleteInfo(const char * file, const char * func, unsigned int line);
-
-#ifndef delete
-#define delete SetDeleteInfo(__FILE__, __FUNCTION__, __LINE__);delete
-#endif //delete
 
 #endif //__DEBUG_MACRO_NEW_DELETE_201903292259__
 
 #endif //MEMORY_CHECK
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __MEMORY_CHECK_LIJUN_C__
 

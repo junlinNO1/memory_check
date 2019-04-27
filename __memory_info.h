@@ -2,6 +2,7 @@
 #define __MEMEORY_INFO_STRUCT_H_H__
 #include <stdio.h>
 #include <stdlib.h>
+#include "__hash.h"
 
 enum MEM_OP_TYPE
 {
@@ -16,17 +17,17 @@ enum MEM_OP_TYPE
 
 enum MEM_STATE
 {
-    MEM_STATE_ALLOCATED = 0,      //ÒÑ·ÖÅä
-    MEM_STATE_REPEAT_ALLOCATED,   //Í¬Ò»µØÖ·ÖØ¸´·ÖÅä
-    MEM_STATE_RELEASED,           //ÒÑ¾­ÕıÈ·ÊÍ·Å
-    MEM_STATE_REPEATED_RELEASED,  //ÖØ¸´ÊÍ·Å
-    MEM_STATE_UNKNOW_ADDR,        //Î´ÖªµØÖ·ÊÍ·Å
-    MEM_STATE_DELETE_MISMATCH     //delete/delete[]Óënew[]/new²»Æ¥Åä
+    MEM_STATE_ALLOCATED = 0,      //å·²åˆ†é…
+    MEM_STATE_REPEAT_ALLOCATED,   //åŒä¸€åœ°å€é‡å¤åˆ†é…
+    MEM_STATE_RELEASED,           //å·²ç»æ­£ç¡®é‡Šæ”¾
+    MEM_STATE_REPEATED_RELEASED,  //é‡å¤é‡Šæ”¾
+    MEM_STATE_UNKNOW_ADDR,        //æœªçŸ¥åœ°å€é‡Šæ”¾
+    MEM_STATE_DELETE_MISMATCH     //delete/delete[]ä¸new[]/newä¸åŒ¹é…
 };
 
 typedef struct _meminfo
 {
-    void *       _ptr;
+	NextElemT    _next;  //æ³¨æ„ï¼šè¿™é‡Œå¿…é¡»æ”¾åœ¨ç»“æ„ä½“ä¸­çš„ç¬¬ä¸€ä¸ªä½ç½®
     unsigned int _size;
     const char * _file;
     const char * _func;
@@ -35,23 +36,20 @@ typedef struct _meminfo
     unsigned int _state;
     MEM_OP_TYPE  _expect_type;
 
-    _meminfo * _next;
-
-    //Ä¬ÈÏ¹¹Ôì
-    _meminfo() :_ptr(NULL)
+    //é»˜è®¤æ„é€ 
+    _meminfo() :_next(0, NULL)
         , _size(0)
         , _file(NULL)
         , _func(NULL)
         , _line(0)
         , _type(OP_NONE)
         , _state(0)
-        , _next(NULL)
     {}
 
-    //´ø²Î¹¹Ôì
-    _meminfo(void * ptr, unsigned int size, const char * file, const char * func, unsigned int line, MEM_OP_TYPE type, 
-        MEM_OP_TYPE expect_type = OP_NONE, unsigned int state = 0, _meminfo * next = NULL)
-        :_ptr(ptr)
+    //å¸¦å‚æ„é€ 
+    _meminfo(unsigned long ptr, unsigned int size, const char * file, const char * func, unsigned int line, MEM_OP_TYPE type, 
+        MEM_OP_TYPE expect_type = OP_NONE, unsigned int state = 0, NextElemT * next = NULL)
+        : _next(ptr, next)
         , _size(size)
         , _file(file)
         , _func(func)
@@ -59,7 +57,6 @@ typedef struct _meminfo
         , _type(type)
         , _expect_type(expect_type)
         , _state(state)
-        , _next(next)
     {}
 
 } MemInfoT;

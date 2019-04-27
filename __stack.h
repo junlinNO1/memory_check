@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//¶ÑÕ»ÄÚ´æ´¢µÄÊµ¼ÊÊı¾İ£¬¿ÉÒÔÍ¨¹ıtypedef ElementT À´ÊµÏÖÌæ»»
+//å †æ ˆå†…å­˜å‚¨çš„å®é™…æ•°æ®ï¼Œå¯ä»¥é€šè¿‡typedef ElementT æ¥å®ç°æ›¿æ¢
 typedef struct _element 
 {
     unsigned int _id;
@@ -24,7 +24,7 @@ typedef struct _element
 void PrintElement(const ElementT & elem);
 
 
-//ÊµÏÖ¶ÑÕ»µÄÁ´±í½Úµã
+//å®ç°å †æ ˆçš„é“¾è¡¨èŠ‚ç‚¹
 typedef struct _node
 {
     ElementT _elem;
@@ -35,11 +35,11 @@ typedef struct _node
 
 } StackNode;
 
-//¼òµ¥µÄµ¥Á´±íÊµÏÖ¶ÑÕ»
+//ç®€å•çš„å•é“¾è¡¨å®ç°å †æ ˆ
 class SimpleLinkStack
 {
 public:
-    //¹¹Ôìº¯Êı£¬°üÀ¨Ò»¸öÆğÊ¼µÄNodeºÍÔªËØ¸öÊı
+    //æ„é€ å‡½æ•°ï¼ŒåŒ…æ‹¬ä¸€ä¸ªèµ·å§‹çš„Nodeå’Œå…ƒç´ ä¸ªæ•°
     SimpleLinkStack();
     ~SimpleLinkStack();
     bool clear();
