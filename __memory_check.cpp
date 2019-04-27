@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdarg.h>
+#include <time.h>
 #include "__memory_check.h"
 
 #ifdef _WIN32
@@ -66,11 +67,11 @@ void GetNowTime(char * timebuf, int len)
     timespec time;
     clock_gettime(CLOCK_REALTIME, &time);  //获取相对于1970到现在的秒数
 
-    tm nowTime;
-    localtime_r(&time.tv_sec, &nowtime);
+    struct tm nowTime;
+    localtime_r(&time.tv_sec, &nowTime);
 
     memset(timebuf, 0, len);
-    sprintf(timebuf, "%04d%02d%02d%02d:%02d:%02d", nowTime.tm_year + 1900, nowTime.tm_mon+1, nowTime.tm_mday, 
+    sprintf(timebuf, "%04d/%02d/%02d %02d:%02d:%02d", nowTime.tm_year + 1900, nowTime.tm_mon+1, nowTime.tm_mday, 
       nowTime.tm_hour, nowTime.tm_min, nowTime.tm_sec);
 }
 
@@ -288,19 +289,6 @@ void FreeMemCheck()
 }
 
 /*************************************************************************************
-* 函数名称: SetDeleteInfo
-* 作     者:  lijun
-* 日     期:  2019.03.29
-* 参     数:
-* 功     能:  释放内存，  对外接口
-* 返 回 值: void
-*************************************************************************************/
-int DeleteMemInfo(void * ptr, int type)
-{
-    return MemCheck.DeleteMemInfo(ptr, (MEM_OP_TYPE)type);
-}
-
-/*************************************************************************************
 * 函数名称: FreeNextElment
 * 作     者:  lijun
 * 日     期:  2019.03.29
@@ -355,8 +343,9 @@ MemoryCheck::~MemoryCheck()
 *************************************************************************************/
 int MemoryCheck::InsertMemInfo(unsigned long addr, unsigned int size, const char * file, const char * func, unsigned int line, MEM_OP_TYPE type)
 {
-    MemInfoT * meminfo = NULL;
-    _new_hash_table.FindElement(addr, meminfo);
+    NextElemT * nextelem = NULL;
+    _new_hash_table.FindElement(addr, nextelem);
+	MemInfoT * meminfo = (MemInfoT *)nextelem;
 
     if (meminfo == NULL)
     {
@@ -368,14 +357,14 @@ int MemoryCheck::InsertMemInfo(unsigned long addr, unsigned int size, const char
 		}
 
         *meminfo = MemInfoT(addr, size, file, func, line, type, OP_NONE, MEM_STATE_ALLOCATED, NULL);
-        _new_hash_table.InsertElement(addr, &meminfo->_next);
+        _new_hash_table.InsertElement(addr, &(meminfo->_next));
     }
     else
     {
         if (meminfo->_state != MEM_STATE_ALLOCATED && meminfo->_state != MEM_STATE_REPEAT_ALLOCATED)
         {
             //源节点已经释放过(无论当时释放是否出错)，则更新节点信息，重复利用节点
-            *meminfo = MemInfoT(addr, size, file, func, line, type, OP_NONE, MEM_STATE_ALLOCATED, meminfo->_next);
+            *meminfo = MemInfoT(addr, size, file, func, line, type, OP_NONE, MEM_STATE_ALLOCATED, meminfo->_next._next);
         }
         else  //理论上不可能出现前一次未释放，而下一次分配在同一个堆地址上
         {
@@ -422,7 +411,7 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
             temp._state = MEM_STATE_REPEATED_RELEASED; //置节点状态删除操作符不匹配
             InsertErrorInfo(temp);
 
-            PrintBacktrace("[MemoryCheck][REPEATED_RELEASE]Memory addr:0x%08x, size:%u, release type:%s, [file:%s, func:%s, line:%u].\n",
+            PrintBacktrace("\n[MemoryCheck][REPEATED_RELEASE]Memory addr:0x%08x, size:%u, release type:%s, [file:%s, func:%s, line:%u].\n",
                 temp._next._real_key, temp._size, OP_NAME[temp._type], temp._file, temp._func, temp._line);
         }
         else if (find_info->_state == MEM_STATE_ALLOCATED)
@@ -444,14 +433,15 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
                 temp._state = MEM_STATE_DELETE_MISMATCH; //置节点状态删除操作符不匹配
                 InsertErrorInfo(temp);
 
-                PrintBacktrace("[MemoryCheck][RELEASE_MISMATCH]Delete mismatch addr:0x%08x, release type:%s, but expect:%s, [file:%s, func:%s, line:%u].\n",
-	                temp->_next._real_key, OP_NAME[temp->_type],
-	                ((temp->_expect_type == OP_NEW) ? OP_NAME[OP_DELETE] : 
-	                (temp->_expect_type == OP_NEW_ARRAY) ? OP_NAME[OP_DELETE_ARRAY] : OP_NAME[OP_FREE]),
-	                temp->_file, temp->_func, temp->_line);
+                PrintBacktrace("\n[MemoryCheck][RELEASE_MISMATCH]Delete mismatch addr:0x%08x, release type:%s, but expect:%s, [file:%s, func:%s, line:%u].\n",
+	                temp._next._real_key, OP_NAME[temp._type],
+	                ((temp._expect_type == OP_NEW) ? OP_NAME[OP_DELETE] : 
+	                (temp._expect_type == OP_NEW_ARRAY) ? OP_NAME[OP_DELETE_ARRAY] : OP_NAME[OP_FREE]),
+	                temp._file, temp._func, temp._line);
             }
             else
             {
+            	printf("[MemoryCheck][RELEASE_SUCCESS]\n");
                 return 0; //正常释放内存
             }
         }
@@ -466,6 +456,9 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, const char * file, const char
         MemInfoT temp = MemInfoT(addr, 0, file, func, line, type);
         temp._state = MEM_STATE_UNKNOW_ADDR; //置节点状态为未找到地址
         InsertErrorInfo(temp);
+
+        PrintBacktrace("\n[MemoryCheck][RELEASE_UNKNOW_ADDR]Memory addr:0x%08x, release type:%s, [file:%s, func:%s, line:%u].\n",
+        	temp._next._real_key, OP_NAME[temp._type], temp._file, temp._func, temp._line);
     }
     return -1; //释放内存错误
 }
@@ -483,14 +476,14 @@ void MemoryCheck::InsertErrorInfo(MemInfoT & meminfo)
     MemInfoT * errormeminfo = (MemInfoT *)malloc(sizeof(MemInfoT));
     if (errormeminfo == NULL)
     {
-        printf("[MemoryCheck][Malloc_Error]InsertDeleteErrorInfo, malloc error meminfo fail!.\n");
+        printf("[MemoryCheck][ERROR]InsertDeleteErrorInfo, malloc error meminfo fail!.\n");
         return;
     }
 
     *errormeminfo = meminfo;
 
     ns_lock::_Auto_Lock autolock(&_errlock);
-    errormeminfo->_next = _errorlist;
+    errormeminfo->_next._next = (NextElemT*)_errorlist;
     _errorlist = errormeminfo;
 }
 
@@ -530,15 +523,21 @@ int MemoryCheck::DeleteMemInfo(unsigned long addr, MEM_OP_TYPE type)
 *************************************************************************************/
 int MemoryCheck::InsertMemInfo(unsigned long addr, size_t size, MEM_OP_TYPE type)
 {
-    assert(ptr != NULL);
     NextElemT * next = NULL;
     _not_trace_new_hash_table.FindElement(addr, next);
     MemInfoT * meminfo = (MemInfoT *)next;
 
     if (meminfo == NULL)
     {
-        MemInfoT temp = MemInfoT(addr, size, "", "", 0, type, OP_NONE, MEM_STATE_ALLOCATED);
-        _not_trace_new_hash_table.InsertElement(&temp);
+        meminfo = (MemInfoT *)malloc(sizeof(MemInfoT));
+		if (meminfo == NULL) 
+		{
+			printf("[MemoryCheck][ERROR]InsertMemInfo malloc fail!\n");
+			return -1;
+		}
+
+        *meminfo = MemInfoT(addr, size, "", "", 0, type, OP_NONE, MEM_STATE_ALLOCATED, NULL);
+        _not_trace_new_hash_table.InsertElement(addr, &(meminfo->_next));
     }
     else
     {
@@ -561,7 +560,7 @@ void MemoryCheck::FreeMemInfo(MemInfoT *& meminfo)
     MemInfoT * del = curr;
     while (del != NULL)
     {
-        curr = del->_next;
+        curr = (MemInfoT *)del->_next._next;
         free(del);
         del = curr;
     }
@@ -598,8 +597,8 @@ void MemoryCheck::FreeMemInfo()
 
     FreeMemInfo(_errorlist);
 
-    _new_hash_table.Reset();
-    _not_trace_new_hash_table.Reset();
+    _new_hash_table.ResetTable();
+    _not_trace_new_hash_table.ResetTable();
 }
 
 /*************************************************************************************
@@ -612,6 +611,8 @@ void MemoryCheck::FreeMemInfo()
 *************************************************************************************/
 void MemoryCheck::PrintMemCheckResult()
 {
+	_new_hash_table.PrintHashScoredHit();
+
     PrintMemLeak();
     PrintRepeatedRelease();
     PrintReleaseTypeMismatch();
@@ -650,7 +651,7 @@ void MemoryCheck::PrintReleaseTypeMismatch()
                 curr->_file, curr->_func, curr->_line);
         }
         
-        curr = curr->_next;
+        curr = (MemInfoT * )curr->_next._next;
     }
 }
 
@@ -695,7 +696,7 @@ void MemoryCheck::PrintReleaseUnknowAddr()
                 curr->_state, curr->_next._real_key, OP_NAME[curr->_type], curr->_file, curr->_func, curr->_line);
         }
 
-        curr = curr->_next;
+        curr = (MemInfoT * )curr->_next._next;
     }
 }
 
@@ -727,8 +728,6 @@ void MemoryCheck::PrintMemLeak()
             WriteToFile(INCORRECT_WRITE, "[MemoryCheck][MEMORY_LEAK]Memory addr:0x%08x, size:%u, release type:%s, [file:%s, func:%s, line:%u].\n",
                 curr->_next._real_key, curr->_size, OP_NAME[curr->_type], curr->_file, curr->_func, curr->_line);
         }
-   
-        curr = curr->_next;
     }
 }
 
@@ -759,7 +758,7 @@ void MemoryCheck::PrintRepeatedRelease()
                 curr->_next._real_key, curr->_size, OP_NAME[curr->_type], curr->_file, curr->_func, curr->_line);
         }
 
-        curr = curr->_next;
+        curr = (MemInfoT * )curr->_next._next;
     }
 }
 
@@ -792,8 +791,6 @@ void MemoryCheck::PrintReleaseSucceed()
             WriteToFile(CORRECT_WRITE, "[MemoryCheck][RELEASE_SUCCEED]Memory addr:0x%08x, size:%u, release type:%s, [file:%s, func:%s, line:%u].\n",
                 curr->_next._real_key, curr->_size, OP_NAME[curr->_type], curr->_file, curr->_func, curr->_line);
         }
-        
-        curr = curr->_next;
     }
 }
 
@@ -805,11 +802,11 @@ void MemoryCheck::PrintReleaseSucceed()
 * 功     能:  打印函数调用栈
 * 返 回 值: void
 *************************************************************************************/
-void MemoryCheck::PrintBacktrace(char * format, ...)
+void MemoryCheck::PrintBacktrace(const char * format, ...)
 {
 	if (_incorrect_released_bt == NULL)
 	{
-		_incorrect_released_bt = fopen("./memory_check_correct.log", "w");
+		_incorrect_released_bt = fopen("./result/memory_check_bt.log", "w");
 		if (_incorrect_released_bt == NULL)
 		{
 			return;
@@ -818,12 +815,12 @@ void MemoryCheck::PrintBacktrace(char * format, ...)
 
 	char buff[1024];
 	memset(buff, 0, sizeof(buff));
-	va_list args;
-    va_start(args, format);
+	va_list args;
+    va_start(args, format);
 	vsnprintf(buff, sizeof(buff), format, args);
-    va_end(args);
-
-	fwrite(buff, sizeof(buff), 1, _incorrect_released_bt);
+	va_end(args);
+	
+	fwrite(buff, strlen(buff), 1, _incorrect_released_bt);
 
 #ifdef __linux__
     void *buffer[20];
@@ -833,11 +830,11 @@ void MemoryCheck::PrintBacktrace(char * format, ...)
     if (strings != NULL)
     {
         snprintf(buff, sizeof(buff), "Obtained %zd stack frames.\n", size);
-        fwrite(buff, sizeof(buff), 1, _incorrect_released_bt);
+        fwrite(buff, strlen(buff), 1, _incorrect_released_bt);
         for (size_t i = 0; i < size; i++)
         {
             snprintf(buff, sizeof(buff), "%s.\n", strings[i]);
-        	fwrite(buff, sizeof(buff), 1, _incorrect_released_bt);
+        	fwrite(buff, strlen(buff), 1, _incorrect_released_bt);
         }
 
 		fflush(_incorrect_released_bt);
@@ -898,40 +895,41 @@ void MemoryCheck::GetBacktrace(char * buff, unsigned int maxlen)
 * 功     能: 写文件
 * 返 回 值: void
 *************************************************************************************/
-void MemoryCheck::WriteToFile(int type, char * format, ...)
+void MemoryCheck::WriteToFile(int type, const char * format, ...)
 {
 	char buffer[1024];
 	memset(buffer, 0, sizeof(buffer));
-	va_list args;
-    va_start(args, format);
-	vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-	
+	va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    
 	if (type == CORRECT_WRITE)
 	{
-		WriteToFile(_correct_released_file, "a", buffer, sizeof(buffer));
+		DoWriteToFile(_correct_released_file, "./result/memory_check_correct.log", "a", buffer, strlen(buffer));
 	}
 	else if (type == INCORRECT_WRITE)
 	{
-		WriteToFile(_incorrect_released_file, "w", buffer, sizeof(buffer));
+		DoWriteToFile(_incorrect_released_file, "./result/memory_check_incorrect.log", "w", buffer, strlen(buffer));
 	}	
 }
 
 /*************************************************************************************
-* 函数名称: MemoryCheck::WriteToFile
+* 函数名称: MemoryCheck::DoWriteToFile
 * 作     者:  lijun
 * 日     期:  2019.03.29
 * 参     数:
 * 功     能: 写文件
 * 返 回 值: void
 *************************************************************************************/
-void MemoryCheck::WriteToFile(FILE *& file, char * mode, char *& data, size_t len)
+void MemoryCheck::DoWriteToFile(FILE *& file, const char * filemame, const char * mode, char * data, size_t len)
 {
 	if (file == NULL)
 	{
-		file = fopen("./memory_check_correct.log", mode);
+		file = fopen(filemame, mode);
 		if (file == NULL)
 		{
+			printf("[MemoryCheck][ERROR]Open file() fail!\n", filemame);
 			return;
 		}
 
@@ -941,7 +939,7 @@ void MemoryCheck::WriteToFile(FILE *& file, char * mode, char *& data, size_t le
 		char buffer[1024];
 		memset(buffer, 0, sizeof(buffer));
 		snprintf(buffer, sizeof(buffer), "Begin(%s)------------------------------------------------------------------- \n", timebuf);
-		fwrite(buffer, sizeof(buffer), 1, file);
+		fwrite(buffer, strlen(buffer), 1, file);
 	}
 
 	fwrite(data, len, 1, file);

@@ -46,6 +46,8 @@ public:
     void InitForNextElement();
 	NextElemT * NextElement();
 
+	void PrintHashScoredHit();
+
 private:
     unsigned int _level1_table_size;
     unsigned int _level2_table_size;

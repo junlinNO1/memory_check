@@ -7,7 +7,7 @@
 #include "memory_check.h"
 #include "TestClass2.h"
 //---------------------------------------------------------------
-// ´ı²âÊÔ´úÂë 
+// å¾…æµ‹è¯•ä»£ç  
 //---------------------------------------------------------------
 extern void bad_code() {
     int *p = new int;
@@ -58,7 +58,6 @@ int main()
 {
     //good_code();
     //bad_code();
-/*
     int *t1 = new int[10];
     delete t1;
     delete t1;
@@ -69,7 +68,7 @@ int main()
 
     A * pA2 = new A;
     delete pA2;
-   */ 
+   
 
     TestClass2 * pobj2 = new TestClass2;
     delete pobj2;

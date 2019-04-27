@@ -32,8 +32,8 @@ public:
 
 private:
     void FreeMemInfo(MemInfoT *& meminfo);
-    void InsertErrorInfo(MemInfoT meminfo);
-    void PrintBacktrace(char * format, ...);
+    void InsertErrorInfo(MemInfoT & meminfo);
+    void PrintBacktrace(const char * format, ...);
     void GetBacktrace(char * buff, unsigned int maxlen);
     
     void PrintMemLeak();
@@ -42,7 +42,8 @@ private:
     void PrintReleaseTypeMismatch();
     void PrintReleaseUnknowAddr();
 
-    void WriteToFile(char * format, ...);
+    void WriteToFile(int type, const char * format, ...);
+	void DoWriteToFile(FILE *& file, const char * filemame, const char * mode, char * data, size_t len);
 
 private:
     MemInfoT * _errorlist;

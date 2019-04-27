@@ -1,5 +1,7 @@
 #include "__hash.h"
-#include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
+#include <memory.h>
 
 const unsigned int SEED = 2654435769u;
 
@@ -48,12 +50,9 @@ _HashTable::_HashTable(unsigned int level1_table_size/* = 0x40*/, unsigned int l
     , _release_elem(NULL)
 {
     _table = (Level1Node*)malloc(_level1_table_size * sizeof(Level1Node));
-	assert(_table != NULL);
-	
     for (unsigned int idx = 0; idx < _level1_table_size; ++idx)
     {
         _table[idx]._level2 = (Level2Node*)malloc(_level2_table_size * sizeof(Level2Node));
-		assert(_table[idx]._level2 != NULL);
         memset(_table[idx]._level2, 0, _level2_table_size * sizeof(Level2Node));
     }
 }
@@ -165,6 +164,7 @@ int _HashTable::InsertElement(unsigned long key, NextElemT * elem)
     if (_table[level1_idx]._level2[level2_idx]._info == NULL)
     {
         _table[level1_idx]._level2[level2_idx]._info = elem;
+        ++_table[level1_idx]._count;
     }
     else
     {
@@ -188,8 +188,8 @@ int _HashTable::InsertElement(unsigned long key, NextElemT * elem)
 *************************************************************************************/
 int _HashTable::FindElement(unsigned long key, NextElemT *& elem)
 {
-    unsigned int level1_idx = hash_high32bit_to_l1_index(value);
-    unsigned int level2_idx = hash_low32bit_to_l2_index(value);
+    unsigned int level1_idx = hash_high32bit_to_l1_index(key);
+    unsigned int level2_idx = hash_low32bit_to_l2_index(key);
 
     elem = NULL;
     _hashlock.lock();
@@ -320,5 +320,46 @@ NextElemT * _HashTable::NextElement()
         }
     }
     return NULL;
+}
+
+/*************************************************************************************
+* 函数名称: _HashTable::PrintHashScoredHit
+* 作     者:  lijun 277974287@qq.com
+* 日     期:  2019.04.24
+* 参     数: void
+* 功     能: 打印hashtable的命中情况
+* 返 回 值: void
+*************************************************************************************/
+void _HashTable::PrintHashScoredHit()
+{
+	if (_table != NULL)
+    {
+    	FILE * file = fopen("./hash_scored_hit.log", "w");
+		if (file == NULL)
+		{
+			printf("[_HashTable][ERROR]PrintHashScoredHit create file(./hash_scored_hit.log) fail!\n");
+			return;
+		}
+
+		char buffer[1024];
+        for (unsigned int idx_l1 = 0; idx_l1 < _level1_table_size; ++idx_l1)
+        {
+        	memset(buffer, 0, sizeof(buffer));
+            sprintf(buffer, "Level 1 (index: %d, hit count: %d)------\n", idx_l1, _table[idx_l1]._count);
+            fwrite(buffer, strlen(buffer), 1, file);
+            for (unsigned idx_l2 = 0; idx_l2 < _level2_table_size; ++idx_l2)
+            {
+            	if (_table[idx_l1]._level2 == NULL) {
+            		continue;
+            	}
+            	
+                memset(buffer, 0, sizeof(buffer));
+	            sprintf(buffer, "--Level 2 (index: %d, hit count: %d)\n", idx_l2, _table[idx_l1]._level2[idx_l2]._count);
+	            fwrite(buffer, strlen(buffer), 1, file);
+            }
+        }
+        fflush(file);
+        fclose(file);
+    }
 }
 
