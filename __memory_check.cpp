@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -64,6 +64,7 @@ static MemoryCheck MemCheck;
 *************************************************************************************/
 void GetNowTime(char * timebuf, int len)
 {
+#ifdef __linux__
     timespec time;
     clock_gettime(CLOCK_REALTIME, &time);  //获取相对于1970到现在的秒数
 
@@ -73,6 +74,9 @@ void GetNowTime(char * timebuf, int len)
     memset(timebuf, 0, len);
     sprintf(timebuf, "%04d/%02d/%02d %02d:%02d:%02d", nowTime.tm_year + 1900, nowTime.tm_mon+1, nowTime.tm_mday, 
       nowTime.tm_hour, nowTime.tm_min, nowTime.tm_sec);
+#elif _WIN32
+	
+#endif
 }
 
 /*************************************************************************************
