@@ -321,7 +321,10 @@ MemoryCheck::MemoryCheck()
 	, _incorrect_released_bt(NULL)
 {
     _new_hash_table.RegesiterReleaseFunc(FreeNextElment);
+    _new_hash_table.Initialize(16, 512);   //根据需要设置一二级表的大小 
+    
     _not_trace_new_hash_table.RegesiterReleaseFunc(FreeNextElment);
+    _not_trace_new_hash_table.Initialize(16, 512);
 }
 
 /*************************************************************************************
@@ -625,7 +628,6 @@ void MemoryCheck::PrintMemCheckResult()
     PrintRepeatedRelease();
     PrintReleaseTypeMismatch();
     PrintReleaseUnknowAddr();
-
     PrintReleaseSucceed();
 }
 
@@ -815,7 +817,7 @@ void MemoryCheck::PrintBacktrace(const char * format, ...)
 {
 	if (_incorrect_released_bt == NULL)
 	{
-		_incorrect_released_bt = fopen("./result/memory_check_bt.log", "w");
+		_incorrect_released_bt = fopen("./result/memory_check_bt.log", "a");
 		if (_incorrect_released_bt == NULL)
 		{
 			return;
@@ -915,11 +917,11 @@ void MemoryCheck::WriteToFile(int type, const char * format, ...)
     
 	if (type == CORRECT_WRITE)
 	{
-		DoWriteToFile(_correct_released_file, "./result/memory_check_correct.log", "a", buffer, strlen(buffer));
+		DoWriteToFile(_correct_released_file, "./result/memory_check_correct.log", "r+", buffer, strlen(buffer));
 	}
 	else if (type == INCORRECT_WRITE)
 	{
-		DoWriteToFile(_incorrect_released_file, "./result/memory_check_incorrect.log", "w", buffer, strlen(buffer));
+		DoWriteToFile(_incorrect_released_file, "./result/memory_check_incorrect.log", "a", buffer, strlen(buffer));
 	}	
 }
 

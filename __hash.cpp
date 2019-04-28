@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
+#include <assert.h>
 
 const unsigned int SEED = 2654435769u;
 
@@ -49,12 +50,6 @@ _HashTable::_HashTable(unsigned int level1_table_size/* = 0x40*/, unsigned int l
     , _current(NULL)
     , _release_elem(NULL)
 {
-    _table = (Level1Node*)malloc(_level1_table_size * sizeof(Level1Node));
-    for (unsigned int idx = 0; idx < _level1_table_size; ++idx)
-    {
-        _table[idx]._level2 = (Level2Node*)malloc(_level2_table_size * sizeof(Level2Node));
-        memset(_table[idx]._level2, 0, _level2_table_size * sizeof(Level2Node));
-    }
 }
 
 /*************************************************************************************
@@ -83,6 +78,45 @@ _HashTable::~_HashTable()
 }
 
 /*************************************************************************************
+* 函数名称: _HashTable::Initialize
+* 作		者:	lijun 277974287@qq.com
+* 日		期:	2019.04.28
+* 参		数:  level1_table_size  - hashtable第一级表的容量
+            level2_table_size  - hashtable第二级表的容量
+* 功		能:	hashtable 初始化，用于分配hash表空间
+* 返 回 值: int   0 - 成功， -1 - 失败
+*************************************************************************************/
+int _HashTable::Initialize(unsigned int level1_table_size/* = 0x40*/, unsigned int level2_table_size/* = 0x1000*/)
+{
+	if (_table == NULL) 
+	{
+		_level1_table_size = level1_table_size;
+		_level2_table_size = level2_table_size;
+		
+		_table = (Level1Node*)malloc(_level1_table_size * sizeof(Level1Node));
+	    if (_table == NULL) {
+	    	printf("[ERROR][_HashTable::Initialize]malloc hashtable level1 table space fail!\n");
+	    	return -1;
+	    }
+
+	    for (unsigned int idx = 0; idx < _level1_table_size; ++idx)
+	    {
+	        _table[idx]._level2 = (Level2Node*)malloc(_level2_table_size * sizeof(Level2Node));
+	        if (_table[idx]._level2 == NULL) {
+	        	printf("[ERROR][_HashTable::Initialize]malloc hashtable level2 table space fail!\n");
+	    		return -1;
+	        }
+	        memset(_table[idx]._level2, 0, _level2_table_size * sizeof(Level2Node));
+	    }
+	}
+	else
+	{
+		ResetTable(_release_elem);
+	}
+	return 0;
+}
+
+/*************************************************************************************
 * 函数名称: _HashTable::RegesiterReleaseFunc
 * 作     者:  lijun 277974287@qq.com
 * 日     期:  2019.04.24
@@ -103,40 +137,43 @@ void _HashTable::RegesiterReleaseFunc(ReleaseElemFunc release_func)
 * 作     者:  lijun 277974287@qq.com
 * 日     期:  2019.04.24
 * 参     数: ReleaseElemFunc - 回调函数；重置hashtable时，如果存储的元素需要释放，此参数用于传递释放函数
+			默认值 NULL。  如果已经调用RegesiterReleaseFunc接口注册过了，可以不用再传递了
 * 功     能: 重置hashtable 表中的数据
 * 返 回 值: void
 *************************************************************************************/
 void _HashTable::ResetTable(ReleaseElemFunc release_func/* = NULL */)
 {
-    if (_table != NULL)
+    if (_table == NULL)
     {
-        for (unsigned int idx_l1 = 0; idx_l1 < _level1_table_size; ++idx_l1)
+    	return;
+    }
+    
+    for (unsigned int idx_l1 = 0; idx_l1 < _level1_table_size; ++idx_l1)
+    {
+        if (_table[idx_l1]._level2 == NULL)
         {
-            if (_table[idx_l1]._level2 == NULL)
+            continue;
+        }
+        
+        for (unsigned idx_l2 = 0; idx_l2 < _level2_table_size; ++idx_l2)
+        {
+            NextElemT * next = NULL;
+            NextElemT * del = _table[idx_l1]._level2[idx_l2]._info;
+            while (del != NULL)
             {
-                continue;
-            }
-            
-            for (unsigned idx_l2 = 0; idx_l2 < _level2_table_size; ++idx_l2)
-            {
-                NextElemT * next = NULL;
-                NextElemT * del = _table[idx_l1]._level2[idx_l2]._info;
-                while (del != NULL)
+                next = del->_next;
+                if (release_func != NULL)
                 {
-                    next = del->_next;
-                    if (release_func != NULL)
-                    {
-                    	release_func(del);
-                    }
-                    else if (_release_elem != NULL)
-                    {
-                    	_release_elem(del);
-                    }
-                    del = next;
+                	release_func(del);
                 }
-                _table[idx_l1]._level2[idx_l2]._info = NULL;
-                _table[idx_l1]._level2[idx_l2]._count = 0;
+                else if (_release_elem != NULL)
+                {
+                	_release_elem(del);
+                }
+                del = next;
             }
+            _table[idx_l1]._level2[idx_l2]._info = NULL;
+            _table[idx_l1]._level2[idx_l2]._count = 0;
         }
     }
 
@@ -157,8 +194,8 @@ int _HashTable::InsertElement(unsigned long key, NextElemT * elem)
 {
 	if (elem == NULL) return -1;
 
-    unsigned int level1_idx = hash_high32bit_to_l1_index(key);
-    unsigned int level2_idx = hash_low32bit_to_l2_index(key);
+    unsigned int level1_idx = Level1Index(key);
+    unsigned int level2_idx = Level2Index(key);
 
     _hashlock.lock();
     if (_table[level1_idx]._level2[level2_idx]._info == NULL)
@@ -188,8 +225,8 @@ int _HashTable::InsertElement(unsigned long key, NextElemT * elem)
 *************************************************************************************/
 int _HashTable::FindElement(unsigned long key, NextElemT *& elem)
 {
-    unsigned int level1_idx = hash_high32bit_to_l1_index(key);
-    unsigned int level2_idx = hash_low32bit_to_l2_index(key);
+    unsigned int level1_idx = Level1Index(key);
+    unsigned int level2_idx = Level2Index(key);
 
     elem = NULL;
     _hashlock.lock();
@@ -221,8 +258,8 @@ int _HashTable::FindElement(unsigned long key, NextElemT *& elem)
 *************************************************************************************/
 int _HashTable::FindAndDeleteElement(unsigned long key, ReleaseElemFunc release_func/*=NULL*/)
 {
-    unsigned int level1_idx = hash_high32bit_to_l1_index(key);
-    unsigned int level2_idx = hash_low32bit_to_l2_index(key);
+    unsigned int level1_idx = Level1Index(key);
+    unsigned int level2_idx = Level2Index(key);
 
     _hashlock.lock();
     NextElemT * cur = _table[level1_idx]._level2[level2_idx]._info;
@@ -284,41 +321,43 @@ void _HashTable::InitForNextElement()
 *************************************************************************************/
 NextElemT * _HashTable::NextElement()
 {
-    if (_table != NULL)
+    if (_table == NULL || _level1_cur_idx >= _level1_table_size || _level2_cur_idx >= _level2_table_size)
     {
-        while (_level1_cur_idx < _level1_table_size)
+    	return NULL;
+    }
+    
+    while (_level1_cur_idx < _level1_table_size)
+    {
+        if (_table[_level1_cur_idx]._level2 == NULL)
         {
-            if (_table[_level1_cur_idx]._level2 == NULL)
-            {
-                ++_level1_cur_idx;
-                _level2_cur_idx = 0;
-                continue;
-            }
+            ++_level1_cur_idx;
+            _level2_cur_idx = 0;
+            continue;
+        }
 
-            if (_current == NULL)
+        if (_current == NULL)
+        {
+            while (_level2_cur_idx < _level2_table_size)
             {
-                while (_level2_cur_idx < _level2_table_size)
+                _current = _table[_level1_cur_idx]._level2[_level2_cur_idx++]._info;
+                if (_current != NULL)
                 {
-                    _current = _table[_level1_cur_idx]._level2[_level2_cur_idx++]._info;
-                    if (_current != NULL)
-                    {
-                        NextElemT * tmp = _current;
-                        _current = _current->_next;
-                        //printf("[NextElement] 0x%08x.\n", tmp->_real_key);
-                        return tmp;
-                    }
+                    NextElemT * tmp = _current;
+                    _current = _current->_next;
+                    //printf("[NextElement] 0x%08x.\n", tmp->_real_key);
+                    return tmp;
                 }
-                
-                ++_level1_cur_idx;
-                _level2_cur_idx = 0;
             }
-            else
-            {
-                NextElemT * tmp = _current;
-                _current = _current->_next;
-                //printf("[NextElement] 0x%08x.\n", tmp->_real_key);
-                return tmp;
-            }
+            
+            ++_level1_cur_idx;
+            _level2_cur_idx = 0;
+        }
+        else
+        {
+            NextElemT * tmp = _current;
+            _current = _current->_next;
+            //printf("[NextElement] 0x%08x.\n", tmp->_real_key);
+            return tmp;
         }
     }
     return NULL;
@@ -336,7 +375,7 @@ void _HashTable::PrintHashScoredHit()
 {
 	if (_table != NULL)
     {
-    	FILE * file = fopen("./hash_scored_hit.log", "a");
+    	FILE * file = fopen("./hash_scored_hit.log", "r+");
 		if (file == NULL)
 		{
 			printf("[_HashTable][ERROR]PrintHashScoredHit create file(./hash_scored_hit.log) fail!\n");
@@ -373,4 +412,33 @@ void _HashTable::PrintHashScoredHit()
         fclose(file);
     }
 }
+
+/*************************************************************************************
+* 函数名称: _HashTable::Level1Index
+* 作     者:  lijun 277974287@qq.com
+* 日     期:  2019.04.28
+* 参     数: const unsigned long &   - hash表的键
+* 功     能: 返回一级表的索引
+* 返 回 值: unsigned int - 一级表索引
+*************************************************************************************/
+unsigned int _HashTable::Level1Index(const unsigned long & key)
+{
+	unsigned int level1_idx = hash_high32bit_to_l1_index(key);
+	return level1_idx % _level1_table_size;
+}
+
+/*************************************************************************************
+* 函数名称: _HashTable::Level2Index
+* 作     者:  lijun 277974287@qq.com
+* 日     期:  2019.04.28
+* 参     数: const unsigned long &   - hash表的键
+* 功     能: 返回二级表的索引
+* 返 回 值: unsigned int - 二级表索引
+*************************************************************************************/
+unsigned int _HashTable::Level2Index(const unsigned long & key)
+{
+	unsigned int level2_idx = hash_low32bit_to_l2_index(key);
+	return level2_idx % _level2_table_size;
+}
+
 

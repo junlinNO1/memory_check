@@ -37,6 +37,7 @@ public:
     _HashTable(unsigned int level1_table_size = 0x40, unsigned int level2_table_size = 0x1000);
     ~_HashTable();
 
+    int Initialize(unsigned int level1_table_size = 0x40, unsigned int level2_table_size = 0x1000);
 	void RegesiterReleaseFunc(ReleaseElemFunc release_func);
     void ResetTable(ReleaseElemFunc release_func = NULL);
     int InsertElement(unsigned long key, NextElemT * elem);
@@ -47,6 +48,10 @@ public:
 	NextElemT * NextElement();
 
 	void PrintHashScoredHit();
+
+private:
+	unsigned int Level1Index(const unsigned long & key);
+	unsigned int Level2Index(const unsigned long & key);
 
 private:
     unsigned int _level1_table_size;
