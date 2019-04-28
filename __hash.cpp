@@ -13,7 +13,7 @@ const unsigned int SEED = 2654435769u;
 * 参     数: unsigned long - 待转换hash值的数据
 * 功     能: 将unsigned long的高32bit转换为hashtable的第一级索引
 * 返 回 值: unsigned int - 索引值
-*************************************************************************************/****/
+*************************************************************************************/
 unsigned int hash_high32bit_to_l1_index(unsigned long value)
 {
     unsigned int high_32bits = (value & 0xFFFFFFFF00000000) >> 32;
@@ -27,7 +27,7 @@ unsigned int hash_high32bit_to_l1_index(unsigned long value)
 * 参     数: unsigned long - 待转换hash值的数据
 * 功     能: 将unsigned long的低32bit转换为hashtable的第二级索引
 * 返 回 值: unsigned int - 索引值
-*************************************************************************************/**/
+*************************************************************************************/
 unsigned int hash_low32bit_to_l2_index(unsigned long value)
 {
     unsigned int low_32bits = (value & 0x00000000FFFFFFFF);
@@ -378,7 +378,7 @@ void _HashTable::PrintHashScoredHit()
     	FILE * file = fopen("./hash_scored_hit.log", "r+");
 		if (file == NULL)
 		{
-			printf("[_HashTable][ERROR]PrintHashScoredHit create file(./hash_scored_hit.log) fail!\n");
+			printf("[_HashTable][Warning]PrintHashScoredHit open file(./hash_scored_hit.log) fail!\n");
 			return;
 		}
 

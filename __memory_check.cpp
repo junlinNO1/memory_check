@@ -817,7 +817,7 @@ void MemoryCheck::PrintBacktrace(const char * format, ...)
 {
 	if (_incorrect_released_bt == NULL)
 	{
-		_incorrect_released_bt = fopen("./result/memory_check_bt.log", "a");
+		_incorrect_released_bt = fopen("./memory_check_bt.log", "a");
 		if (_incorrect_released_bt == NULL)
 		{
 			return;
@@ -917,11 +917,11 @@ void MemoryCheck::WriteToFile(int type, const char * format, ...)
     
 	if (type == CORRECT_WRITE)
 	{
-		DoWriteToFile(_correct_released_file, "./result/memory_check_correct.log", "r+", buffer, strlen(buffer));
+		DoWriteToFile(_correct_released_file, "./memory_check_correct.log", "r+", buffer, strlen(buffer));
 	}
 	else if (type == INCORRECT_WRITE)
 	{
-		DoWriteToFile(_incorrect_released_file, "./result/memory_check_incorrect.log", "a", buffer, strlen(buffer));
+		DoWriteToFile(_incorrect_released_file, "./memory_check_incorrect.log", "a", buffer, strlen(buffer));
 	}	
 }
 
@@ -940,7 +940,9 @@ void MemoryCheck::DoWriteToFile(FILE *& file, const char * filemame, const char 
 		file = fopen(filemame, mode);
 		if (file == NULL)
 		{
-			printf("[MemoryCheck][ERROR]Open file() fail!\n", filemame);
+			if (strstr(filemame, "memory_check_correct.log") == NULL) {
+				printf("[MemoryCheck][Warning]Open file(%s) fail!\n", filemame);
+			}
 			return;
 		}
 
